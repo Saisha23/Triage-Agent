@@ -1,0 +1,6 @@
+groq
+langchain-groq
+langgraph
+python-dotenv
+pydantic
+jupyter
