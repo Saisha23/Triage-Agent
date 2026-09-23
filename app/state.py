@@ -32,13 +32,22 @@ class TriageResult(BaseModel):
     needs_human_review: bool
 
 
-class TriageState(TypedDict, total=False):
-    email: str
-    triage_result: TriageResult
+class ValidationResult(BaseModel):
+    passed: bool
 
-    validation_errors: list[str]
-    review_reason: str
+    errors: list[str] = Field(
+        default_factory=list
+    )
+
+    review_reason: str = ""
+
     route: Literal[
         "human_review",
         "automatic_processing",
     ]
+
+
+class TriageState(TypedDict, total=False):
+    email: str
+    triage_result: TriageResult
+    validation_result: ValidationResult
