@@ -34,20 +34,18 @@ class TriageResult(BaseModel):
 
 class ValidationResult(BaseModel):
     passed: bool
-
-    errors: list[str] = Field(
-        default_factory=list
-    )
-
+    errors: list[str] = Field(default_factory=list)
     review_reason: str = ""
 
     route: Literal[
         "human_review",
         "automatic_processing",
+        "spam"
     ]
 
 
 class TriageState(TypedDict, total=False):
+    subject:str
     email: str
     triage_result: TriageResult
     validation_result: ValidationResult

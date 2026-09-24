@@ -1,43 +1,110 @@
 # Triage Agent
 
-An email triage workflow built with LangGraph, LangChain, and Groq. It classifies an email, validates the result deterministically, and routes high-risk or uncertain messages to human review.
+An AI-assisted email triage service built with FastAPI, LangGraph, LangChain, Groq, and SQLAlchemy. Each email is classified into a known category, assigned a priority and confidence score, validated with deterministic rules, and routed either to automatic processing or human review.
 
-## Features
+## What it does
 
-- Structured classification into complaint, feedback, request, spam, or other
-- Priority scoring from low to critical
-- Confidence and human-review validation rules
-- Automatic processing or human-review routing
-- Notebook examples for graph visualization and sample emails
+- Classifies email as `Complaint`, `Feedback`, `Request`, `Spam`, or `Other`.
+- Assigns `Low`, `Medium`, `High`, or `Critical` priority.
+- Routes low-confidence, high-priority, critical, or model-flagged messages to human review.
+- Stores emails and triage results through SQLAlchemy.
+- Exposes endpoints for triage, stored emails, the review queue, and review decisions.
+- Includes notebooks for configuration, graph exploration, and Groq experiments.
+
+## Requirements
+
+- Python 3.11 or newer
+- A Groq API key
+- A SQLAlchemy-compatible database URL (SQLite is suitable for local development)
 
 ## Setup
 
-1. Create and activate a Python 3.11 virtual environment.
-2. Install dependencies:
+Create and activate a virtual environment, then install the dependencies:
 
-   ```powershell
-   pip install -r requirements.txt
-   ```
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
 
-3. Create a local `.env` file that is never committed:
+Create a local `.env` file in the project root. Use your own values; never place real credentials in this README, source files, notebooks, or commits:
 
-   ```text
-   GROQ_API_KEY=your_groq_api_key
-   GROQ_MODEL=qwen/qwen3.8-27b
-   ```
+```dotenv
+GROQ_API_KEY=<your-groq-api-key>
+GROQ_MODEL=<your-groq-model>
+DATABASE_URL=sqlite:///./triage.db
+```
 
-4. Open `app/graph.ipynb` from the project root and run the cells.
+The repository ignores `.env` files. If a credential is ever committed or exposed, revoke it with the provider and create a replacement.
 
-## Security
+## Initialize the database
 
-This project is a local notebook workflow; it does not start a web server or expose an HTTP API. The Groq key is read from `.env` and is not included in the repository. Keep the GitHub repository private unless you intentionally add an authenticated deployment boundary, and never print or commit API keys.
+With the virtual environment active and `.env` configured:
 
-If a key has ever been exposed, revoke it in the Groq console and create a replacement before using this project.
+```powershell
+python create_tables.py
+```
 
-## Project Layout
+For a PostgreSQL database, replace `DATABASE_URL` with the appropriate SQLAlchemy URL and ensure the database is available before running the command.
 
-- `app/graph.ipynb`: LangGraph workflow and examples
-- `app/state.py`: Typed state and structured triage result schema
-- `app/config.ipynb`: Environment configuration checks
-- `01_test_groq.ipynb`: Local Groq connectivity experiments
-- `requirements.txt`: Python dependencies
+## Run the API
+
+Start the development server from the project root:
+
+```powershell
+uvicorn app.main:app --reload
+```
+
+The interactive API documentation is available at <http://127.0.0.1:8000/docs>.
+
+### Endpoints
+
+`POST /triage` classifies an email:
+
+```json
+{
+   "subject": "Unable to access my account",
+   "email": "I have been locked out since this morning."
+}
+```
+
+Other endpoints:
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/` | Health message |
+| `POST` | `/triage` | Classify an email |
+| `GET` | `/emails` | List stored emails and triage results |
+| `GET` | `/review-queue` | List pending human reviews |
+| `POST` | `/review` | Approve or reject a review item |
+
+The current API triage route returns the classification result. Persistence utilities and database inspection scripts are also included for local workflow testing.
+
+## Notebooks and scripts
+
+- `app/graph.ipynb`: Notebook version of the triage graph.
+- `app/config.ipynb`: Checks required environment configuration.
+- `01_test_groq.ipynb`: Local Groq connectivity experiment.
+- `check_database.py`: Persists a sample triage result for testing.
+- `test_persistence.py`: Example persistence call.
+- `create_tables.py`: Creates and updates the database tables.
+
+## Project structure
+
+```text
+app/
+   database.py       Database engine and sessions
+   graph.py          LangGraph classification and validation workflow
+   main.py           FastAPI application and endpoints
+   models.py         SQLAlchemy email and triage models
+   persistence.py    Persistence helper
+   state.py          Pydantic result schemas and graph state
+```
+
+## Security checklist
+
+- Keep `.env` local and out of version control.
+- Use placeholders when documenting configuration.
+- Do not print `GROQ_API_KEY`, database credentials, or tokens in logs.
+- Rotate any credential that may have been exposed.
+- Add authentication and authorization before exposing the API beyond a trusted local environment.
